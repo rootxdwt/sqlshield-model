@@ -33,6 +33,7 @@ def train_model(path):
     # Training Loop
     print("\nTRAINING STARTED")
     for epoch in range(EPOCHS):
+        start_time = time.time()
         model.train() # Set model to training mode
         running_loss = 0.0
         correct_train = 0
@@ -75,13 +76,14 @@ def train_model(path):
                 total_val += labels.size(0)
                 correct_val += (predicted == labels).sum().item()
 
-        # Print Epoch Stats
+        # Epoch Stats
         epoch_acc = 100 * correct_train / total_train
         val_acc = 100 * correct_val / total_val
         avg_train_loss = running_loss / len(train_loader)
         avg_val_loss = val_loss / len(val_loader)
+        duration = time.time() - start_time
 
-        print(f"Epoch [{epoch+1}/{EPOCHS}]")
+        print(f"Epoch [{epoch+1}/{EPOCHS}] | Time: {duration:.1f}s")
         print(f"Train Loss: {avg_train_loss:.4f} | Train Acc: {epoch_acc:.2f}%")
         print(f"Val Loss:   {avg_val_loss:.4f} | Val Acc:   {val_acc:.2f}%")
 
