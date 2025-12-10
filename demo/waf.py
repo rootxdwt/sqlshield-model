@@ -46,34 +46,27 @@ def preprocess_input(text):
 def waf(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        id = request.args.get('id', '')
-        pw = request.args.get('pw', '')
-        try:
-            model.load_state_dict(state_dict)
-        except Exception as e:
-            return jsonify({'error': 'model load failed'}), 500
+        for value in request.args.values():
+            try:
+                model.load_state_dict(state_dict)
+            except Exception as e:
+                return jsonify({'error': 'model load failed'}), 500
+            model.to(device)
+            model.eval() # turns off dropout layers
 
-        model.to(device)
-        model.eval() # turns off dropout layers
+            # prepare input
+            tensor = preprocess_input(value).to(device)
+            # prediction
+            with torch.no_grad():
+                log = model(tensor)
+                prob = F.softmax(log, dim=1)
 
-        # prepare input
-        id_tensor = preprocess_input(id).to(device)
-        pw_tensor = preprocess_input(pw).to(device)
+                # get result
+                _, pred = torch.max(prob, 1)
 
-        # prediction
-        with torch.no_grad():
-            id_log = model(id_tensor)
-            pw_log = model(pw_tensor)
-            id_prob = F.softmax(id_log, dim=1)
-            pw_prob =F.softmax(pw_log,dim=1)
-            
-            # get result
-            _, id_pred = torch.max(id_prob, 1)
-            _, pw_pred = torch.max(pw_prob, 1)
-
-        # report
-        if id_pred.item() == 1 or pw_pred.item()==1:
-            return jsonify({'error': 'Invalid input detected'}), 400
+            # report
+            if pred.item() == 1:
+                return jsonify({'error': 'Invalid input detected'}), 400
 
         return f(*args, **kwargs)
     return decorated_function
